@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  monocle-s3-langchain
+
+  Sample SAM Template for monocle-s3-langchain
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 15
+
+    Tracing: Active
+    # You can add LoggingConfig parameters such as the Logformat, Log Group, and SystemLogLevel or ApplicationLogLevel. Learn more here https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-loggingconfig.
+    LoggingConfig:
+      LogFormat: JSON
+  Api:
+    TracingEnabled: true
+Resources:
+  LangchainTSMonocleFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: coffee-chatbot-typescript/
+      Handler: app.lambdaHandler
+      Runtime: nodejs20.x
+      Architectures:
+      - x86_64
+      # Events:
+      #   LangchainTSMonocle:
+      #     Type: Api # More info about API Event Source:
+      Environment:
+        Variables:
+          NODE_ENV: production
+          MONOCLE_EXPORTER: s3
+          MONOCLE_S3_BUCKET_NAME: BUCKET_NAME
+          OPENAI_API_KEY: OPENAI_API_KEY
+          MONOCLE_AWS_ACCESS_KEY_ID: MONOCLE_AWS_ACCESS_KEY_ID
+          MONOCLE_AWS_SECRET_ACCESS_KEY: MONOCLE_AWS_SECRET_ACCESS_KEY
+          MONOCLE_S3_KEY_PREFIX: monocle_trace_
+
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name:
+        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName:
+        Ref: ApplicationResourceGroup
+      AutoConfigurationEnabled: 'true'
+Outputs:
+  LangchainTSMonocleFunction:
+    Description: Langchain Lambda Function ARN
+    Value: !GetAtt LangchainTSMonocleFunction.Arn
+  LangchainTSMonocleFunctionIamRole:
+    Description: Implicit IAM Role created for Langchain function
+    Value: !GetAtt LangchainTSMonocleFunctionRole.Arn
